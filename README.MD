@@ -1,3 +1,4 @@
-With FFTW3 (https://www.fftw.org/) installed, you should be able to compile the example executable with
+Course project for the course Numerical Methods in Scientific Computing 2025
 
-	g++ example.cpp -O3 -lfftw3f -o example.a
+Fluid simulation based on the solver found here:
+https://www.dgp.toronto.edu/public_user/stam/reality/Research/pdf/jgt01.pdf
