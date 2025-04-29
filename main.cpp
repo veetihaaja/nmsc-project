@@ -4,33 +4,85 @@
 
 static fftwf_plan plan_rc, plan_cr;
 
+/*
+Final project of NMSC 2025, by Veeti Haaja, based on the simple stable FFT fluid solver by Stam.
+
+
+
+*/
+
+/*
+This function initializes the FFTW planner routines for real-to-complex and complex-to-real transforms in 2D.
+params:
+n: size of the grid (number of rows and columns)
+*/
 void init_FFT(int n)
 {
   plan_rc = fftwf_plan_dft_r2c_2d(n, n, nullptr, nullptr, FFTW_ESTIMATE);
   plan_cr = fftwf_plan_dft_c2r_2d(n, n, nullptr, nullptr, FFTW_ESTIMATE);
 }
 
+/*
+This function deinitializes the FFTW planner routines.
+*/
 void deinit_FFT()
 {
   fftwf_destroy_plan(plan_rc);
   fftwf_destroy_plan(plan_cr);
 }
 
+/*
+This is a macro to execute the FFTW plan for real-to-complex and complex-to-real transforms.
+
+params:
+s: sign of the transform (1 for real-to-complex, -1 for complex-to-real)
+u: pointer to the data array
+*/
 #define FFT(s, u)                                                   \
   if (s == 1)                                                       \
     fftwf_execute_dft_r2c(plan_rc, (float *)u, (fftwf_complex *)u); \
   else                                                              \
     fftwf_execute_dft_c2r(plan_cr, (fftwf_complex *)u, (float *)u)
 
-// This is the stable solve algorithm from Jos Stam's paper
-// u ~ x, v ~ y and external force is entered via u0, v0.
+/*
+This is the stable solve algorithm from Jos Stam's paper
+u ~ x, v ~ y and external force is entered via u0, v0.
+
+The solver has 4 main steps:
+    - Add force field (done in the spatial domain)
+
+    - Advect velocity (done in the spatial domain)
+
+    - Diffuse velocity (done in the frequency domain)
+
+    - Force velocity to conserve mass (done in the frequency domain)
+
+params:
+n: size of the grid (number of rows and columns)
+u: pointer to the velocity field in the x direction
+v: pointer to the velocity field in the y direction
+
+u0: pointer to the external force field in the x direction
+v0: pointer to the external force field in the y direction
+the above fields are also used for interpolation in the self-advection step
+
+visc: viscosity of the fluid
+dt: time step for the simulation
+*/
+
 void stable_solve(int n, float *u, float *v, float *u0, float *v0,
                   float visc, float dt)
 
 {
+
+    // initializing variables
     float x, y, x0, y0, f, r, U[2], V[2], s, t;
     int i, j, i0, j0, i1, j1;
 
+    // step 1
+    // looping over the velocity arrays
+    // updating the velocity fields with the external forces
+    // then setting the external velocity fields to match the updated velocity fields (this is used for interpolation in the next step)
     for (i = 0; i < n * n; i++)
     {
         u[i] += dt * u0[i];
@@ -39,6 +91,11 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
         v0[i] = v[i];
     }
 
+    // step 2
+    // advecting the velocity fields
+
+    // x and y are the centers of cells' positions
+    // i and j are the indices of the cells
     for (x = 0.5 / n, i = 0; i < n; i++, x += 1.0 / n)
     {
         for (y = 0.5 / n, j = 0; j < n; j++, y += 1.0 / n)
@@ -70,7 +127,8 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
             u0[i + (n + 2) * j] = u[i + n * j];
             v0[i + (n + 2) * j] = v[i + n * j];
         }
-
+    
+    // transforming the arrays u0 and v0 to the frequency domain
     FFT(1, u0);
     FFT(1, v0);
 
@@ -101,6 +159,7 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
         }
     }
 
+    // transforming the arrays u0 and v0 back to the spatial domain
     FFT(-1, u0);
     FFT(-1, v0);
 
