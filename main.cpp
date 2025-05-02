@@ -93,7 +93,39 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
     }
 
     // step 2
-    // advecting the velocity fields
+    // advecting the velocity fields    
+    for (x = 0.5 / n, i = 0; i < n; i++, x += 1.0 / n)
+    {
+        for (y = 0.5 / n, j = 0; j < n; j++, y += 1.0 / n)
+        {
+
+            // this is interpolation, where x0 and y0 are the cell center positions times n, when interpolated backwards a timestep. 
+            x0 = n * (x - dt * u0[i + n * j]) - 0.5;
+            y0 = n * (y - dt * v0[i + n * j]) - 0.5;
+
+            // her we calculate i0, i1 and s, which are
+            // i0 is the index of the cell at x0
+            i0 = floor(x0);
+            // s is the distance from the cell center to the position x0
+            s = x0 - i0;
+            // this accounts for the periodic boundary conditions
+            i0 = (n + (i0 % n)) % n;
+            // i1 is the index of the next cell in the x direction
+            i1 = (i0 + 1) % n;
+
+            // same things here but for the y direction
+            j0 = floor(y0);
+            t = y0 - j0;
+            j0 = (n + (j0 % n)) % n;
+            j1 = (j0 + 1) % n;
+
+            u[i + n * j] = (1 - s) * ((1 - t) * u0[i0 + n * j0] + t * u0[i0 + n * j1]) +
+                           s * ((1 - t) * u0[i1 + n * j0] + t * u0[i1 + n * j1]);
+
+            v[i + n * j] = (1 - s) * ((1 - t) * v0[i0 + n * j0] + t * v0[i0 + n * j1]) +
+                           s * ((1 - t) * v0[i1 + n * j0] + t * v0[i1 + n * j1]);
+        }
+    }
 
     // x and y are the centers of cells' positions
     // i and j are the indices of the cells
@@ -178,12 +210,49 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
         }
     
     // TODO solve dye field advection
-    
-    
+    // to change this to solve the dye field advection, we need to make a new D0 array for the interpolation
+
+    // dD/dt + (u * nabla) D = 0
+    // dD/dt = -v_x * nabla D - v_y * nabla D
+
+    float D0[n];
+    float d0;
+
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) {
+            D0[i + n * j] = D[i + n * j];
+        }
+    }
+
+    for (x = 0.5 / n, i = 0; i < n; i++, x += 1.0 / n)
+    {
+        for (y = 0.5 / n, j = 0; j < n; j++, y += 1.0 / n)
+        {
+
+            // x0 = n * (x - dt * u0[i + n * j]) - 0.5;
+            // y0 = n * (y - dt * v0[i + n * j]) - 0.5;
+
+            // i0 = floor(x0);
+            // s = x0 - i0;
+            // i0 = (n + (i0 % n)) % n;
+            // i1 = (i0 + 1) % n;
+
+            // j0 = floor(y0);
+            // t = y0 - j0;
+            // j0 = (n + (j0 % n)) % n;
+            // j1 = (j0 + 1) % n;
+
+            // u[i + n * j] = (1 - s) * ((1 - t) * u0[i0 + n * j0] + t * u0[i0 + n * j1]) +
+            //                s * ((1 - t) * u0[i1 + n * j0] + t * u0[i1 + n * j1]);
+
+            // v[i + n * j] = (1 - s) * ((1 - t) * v0[i0 + n * j0] + t * v0[i0 + n * j1]) +
+            //                s * ((1 - t) * v0[i1 + n * j0] + t * v0[i1 + n * j1]);
+        }
+    }
 
 }
 
-void initial_vx_field(float *f_x, const int n, const float U_0, const float delta) {
+void initial_fx_field(float *f_x, const int n, const float U_0, const float delta) {
 
     float y_j;
 
@@ -192,11 +261,10 @@ void initial_vx_field(float *f_x, const int n, const float U_0, const float delt
             y_j = (float)j / n;
             f_x[i + n * j] = U_0 * tanhf((y_j - 0.5)/(delta));
         }
-    }
-    
+    }   
 }
 
-void initial_vy_field(float *f_y, const int n, const float A, const float k, const float sigma) {
+void initial_fy_field(float *f_y, const int n, const float A, const float k, const float sigma) {
 
     float x_i, y_j;
 
@@ -209,7 +277,7 @@ void initial_vy_field(float *f_y, const int n, const float A, const float k, con
     }
 }
 
-void initial_D_field(float *D, const int n, const float A, const float k, const float sigma) {
+void initial_D_field(float *D, const int n) {
 
     float y_j;
 
@@ -296,7 +364,43 @@ int main() {
     memset(f_x, 0, sizeof(float) * arraysize);
     memset(f_y, 0, sizeof(float) * arraysize);
 
-    // Your code for the simulation logic goes here
+    // Initialize dye field
+
+    initial_D_field(D, N);
+
+    float time = 0.0;
+    const float time_end = 1000.0;
+
+    int timestep = 0;
+    const int simulation_steps = 500;
+
+    const int write_interval = 10; // write every 10 steps
+    const char *filename = "output.txt";
+
+
+    // main simulation loop
+    while (time < time_end && timestep < simulation_steps) {
+
+        // apply force fields
+        if (timestep < 10) {
+            initial_fx_field(f_x, N, U_0, delta);
+            initial_fy_field(f_y, N, A, k, sigma);
+        } else {
+            memset(f_x, 0, sizeof(float) * arraysize);
+            memset(f_y, 0, sizeof(float) * arraysize);
+        }
+
+        // apply solver
+        stable_solve(N, u, v, f_x, f_y, D, visc, delta_t);
+
+        // write to file every write_interval steps
+        if (timestep % write_interval == 0) {
+            write_to_file(filename, u, v, D, N, time);
+        }
+
+        time += delta_t;
+        timestep++;
+    }
 
 
     // Deallocate the arrays, deinitialize FFTW
