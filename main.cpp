@@ -6,6 +6,8 @@
 
 static fftwf_plan plan_rc, plan_cr;
 
+#define DEBUG 1
+
 /*
 Final project of NMSC 2025, by Veeti Haaja, based on the simple stable FFT fluid solver by Stam.
 */
@@ -92,6 +94,11 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
         v0[i] = v[i];
     }
 
+    if (DEBUG)
+    {
+        std::cout << "step 1 done" << std::endl;
+    }
+
     // step 2
     // advecting the velocity fields    
     for (x = 0.5 / n, i = 0; i < n; i++, x += 1.0 / n)
@@ -127,6 +134,11 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
         }
     }
 
+    if (DEBUG)
+    {
+        std::cout << "step 2 done" << std::endl;
+    }
+
     // x and y are the centers of cells' positions
     // i and j are the indices of the cells
     for (x = 0.5 / n, i = 0; i < n; i++, x += 1.0 / n)
@@ -155,6 +167,11 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
         }
     }
 
+    if (DEBUG)
+    {
+        std::cout << "step 3 done" << std::endl;
+    }
+
     for (i = 0; i < n; i++)
         for (j = 0; j < n; j++)
         {
@@ -162,9 +179,20 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
             v0[i + (n + 2) * j] = v[i + n * j];
         }
     
+
+    if (DEBUG)
+    {
+        std::cout << "transforming into frequenct domain" << std::endl;
+    }
+
     // transforming the arrays u0 and v0 to the frequency domain
     FFT(1, u0);
     FFT(1, v0);
+
+    if (DEBUG)
+    {
+        std::cout << "transformation done" << std::endl;
+    }
 
 
     // here we solve the viscosity term in the frequency domain
@@ -183,7 +211,7 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
             if (r == 0.0)
                 continue;
 
-            f = expf(-r * dt * visc);
+            f = exp(-r * dt * visc);
             U[0] = u0[i + (n + 2) * j];
             V[0] = v0[i + (n + 2) * j];
             U[1] = u0[i + 1 + (n + 2) * j];
@@ -196,9 +224,19 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
         }
     }
 
+    if (DEBUG)
+    {
+        std::cout << "step 4 done, transforming back into spatial domain" << std::endl;
+    }
+
     // transforming the arrays u0 and v0 back to the spatial domain
     FFT(-1, u0);
     FFT(-1, v0);
+
+    if (DEBUG)
+    {
+        std::cout << "transform back done" << std::endl;
+    }
 
     // here we normalize the arrays u and v
     f = 1.0 / (n * n);
@@ -208,6 +246,10 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
             u[i + n * j] = f * u0[i + (n + 2) * j];
             v[i + n * j] = f * v0[i + (n + 2) * j];
         }
+
+    if (DEBUG) {
+        std::cout << "step 5 done" << std::endl;
+    }
     
     // TODO solve dye field advection
     // to change this to solve the dye field advection, we need to make a new D0 array for the interpolation
@@ -249,6 +291,14 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
             //                s * ((1 - t) * v0[i1 + n * j0] + t * v0[i1 + n * j1]);
         }
     }
+
+    if (DEBUG)
+    {
+        std::cout << "step 6 done" << std::endl;
+        std::cout << "solver done" << std::endl;
+    }
+
+
 
 }
 
@@ -377,10 +427,13 @@ int main() {
     const int write_interval = 10; // write every 10 steps
     const char *filename = "output.txt";
 
-
+    std::cout << "starting simulation" << std::endl;
     // main simulation loop
     while (time < time_end && timestep < simulation_steps) {
 
+        if (DEBUG) {
+            std::cout << "timestep: " << timestep << ", time: " << time << std::endl;
+        }
         // apply force fields
         if (timestep < 10) {
             initial_fx_field(f_x, N, U_0, delta);
@@ -389,17 +442,29 @@ int main() {
             memset(f_x, 0, sizeof(float) * arraysize);
             memset(f_y, 0, sizeof(float) * arraysize);
         }
+        if (DEBUG) {
+            std::cout << "force fields applied" << std::endl;
+        }   
 
         // apply solver
         stable_solve(N, u, v, f_x, f_y, D, visc, delta_t);
+
+        if (DEBUG) {
+            std::cout << "solver applied" << std::endl;
+        }
 
         // write to file every write_interval steps
         if (timestep % write_interval == 0) {
             write_to_file(filename, u, v, D, N, time);
         }
 
+        if (DEBUG) {
+            std::cout << "file written" << std::endl;
+        }
+
         time += delta_t;
         timestep++;
+
     }
 
 
