@@ -1,6 +1,8 @@
 #include <fftw3.h>
 #include <math.h>
 #include <cstring> // for memset
+#include <iostream>
+#include <fstream>
 
 static fftwf_plan plan_rc, plan_cr;
 
@@ -63,12 +65,14 @@ u0: pointer to the external force field in the x direction
 v0: pointer to the external force field in the y direction
 the above fields are also used for interpolation in the self-advection step
 
+D: pointer to the dye field
+
 visc: viscosity of the fluid
 dt: time step for the simulation
 */
 
 void stable_solve(int n, float *u, float *v, float *u0, float *v0,
-                  float visc, float dt)
+                  float *D, float visc, float dt)
 
 {
 
@@ -100,6 +104,7 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
 
             x0 = n * (x - dt * u0[i + n * j]) - 0.5;
             y0 = n * (y - dt * v0[i + n * j]) - 0.5;
+
             i0 = floor(x0);
             s = x0 - i0;
             i0 = (n + (i0 % n)) % n;
@@ -146,7 +151,7 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
             if (r == 0.0)
                 continue;
 
-            f = exp(-r * dt * visc);
+            f = expf(-r * dt * visc);
             U[0] = u0[i + (n + 2) * j];
             V[0] = v0[i + (n + 2) * j];
             U[1] = u0[i + 1 + (n + 2) * j];
@@ -171,6 +176,11 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
             u[i + n * j] = f * u0[i + (n + 2) * j];
             v[i + n * j] = f * v0[i + (n + 2) * j];
         }
+    
+    // TODO solve dye field advection
+    
+    
+
 }
 
 void initial_vx_field(float *f_x, const int n, const float U_0, const float delta) {
@@ -215,6 +225,47 @@ void initial_D_field(float *D, const int n, const float A, const float k, const 
     }
 }
 
+void write_to_file(const char *filename, const float *v_x, const float *v_y, const float *D, const int n, const float time) {
+
+    std::ofstream file;
+    file.open(filename);
+
+    if (!file) {
+        std::cerr << "Error opening file: " << filename << std::endl;
+        abort();
+    }
+
+    //writing timestep
+    file << time << "\n";
+
+    //writing vx
+    for (int i = 0; i<n; i++) {
+        for (int j = 0; j<n; j++) {
+            file << v_x[i + n * j] << "\t";
+        }
+    }
+
+    file << "\n";
+
+    //writing vy
+    for (int i = 0; i<n; i++) {
+        for (int j = 0; j<n; j++) {
+            file << v_y[i + n * j] << "\t";
+        }
+    }
+
+    file << "\n";
+
+    for (int i = 0; i<n; i++) {
+        for (int j = 0; j<n; j++) {
+            file << D[i + n * j] << "\t";
+        }
+    }
+    
+    file << "\n";
+    file.close();
+
+}
 
 int main() {
 
