@@ -6,9 +6,6 @@ static fftwf_plan plan_rc, plan_cr;
 
 /*
 Final project of NMSC 2025, by Veeti Haaja, based on the simple stable FFT fluid solver by Stam.
-
-
-
 */
 
 /*
@@ -176,33 +173,85 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
         }
 }
 
+void initial_vx_field(float *f_x, const int n, const float U_0, const float delta) {
+
+    float y_j;
+
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            y_j = (float)j / n;
+            f_x[i + n * j] = U_0 * tanhf((y_j - 0.5)/(delta));
+        }
+    }
+    
+}
+
+void initial_vy_field(float *f_y, const int n, const float A, const float k, const float sigma) {
+
+    float x_i, y_j;
+
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            y_j = (float)j / n;
+            x_i = (float)i / n;
+            f_y[i + n * j] = A * sinf(2 * M_PI * k * x_i) * expf(-(y_j - 0.5)*(y_j - 0.5)/(2 * sigma * sigma));
+        }
+    }
+}
+
+void initial_D_field(float *D, const int n, const float A, const float k, const float sigma) {
+
+    float y_j;
+
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            y_j = (float)j / n;
+            if (y_j < 0.5) {
+                D[i + n * j] = 0.0;
+            } else {
+                D[i + n * j] = 1.0;
+            }
+        }
+    }
+}
 
 
 int main() {
 
-  const int N = 500; // Setting up 500x500 grid for an example
-  const int arraysize = N * (N + 2); // fftw uses two extra rows
+    const int N = 500; // Setting up 500x500 grid for an example
+    const int arraysize = N * (N + 2); // fftw uses two extra rows
 
-  // Allocate arrays using fftwf_malloc
-  float *u = static_cast<float *>(fftwf_malloc(sizeof(float) * arraysize));
-  float *v = static_cast<float *>(fftwf_malloc(sizeof(float) * arraysize));
-
-  float *f_x = static_cast<float *>(fftwf_malloc(sizeof(float) * arraysize));
-  float *f_y = static_cast<float *>(fftwf_malloc(sizeof(float) * arraysize));
-
-  // Initialize arrays to zero (fftwf_malloc does not initialize memory)
-  memset(u, 0, sizeof(float) * arraysize);
-  memset(v, 0, sizeof(float) * arraysize);
-  memset(f_x, 0, sizeof(float) * arraysize);
-  memset(f_y, 0, sizeof(float) * arraysize);
-
-  // Your code for the simulation logic goes here
+    const float delta_t = 0.01; // time step
+    const float visc = 0.001; // viscosity
+    const float U_0 = 5.0; 
+    const float delta = 0.025; 
+    const float A = 1.0; 
+    const float sigma = 0.02;
+    const float k = 4.0; 
 
 
-  // Deallocate the arrays, deinitialize FFTW
-  fftwf_free(u);
-  fftwf_free(v);
-  fftwf_free(f_x);
-  fftwf_free(f_y);
-  deinit_FFT();
+    // Allocate arrays using fftwf_malloc
+    float *u = static_cast<float *>(fftwf_malloc(sizeof(float) * arraysize));
+    float *v = static_cast<float *>(fftwf_malloc(sizeof(float) * arraysize));
+
+    float *f_x = static_cast<float *>(fftwf_malloc(sizeof(float) * arraysize));
+    float *f_y = static_cast<float *>(fftwf_malloc(sizeof(float) * arraysize));
+
+    float *D = static_cast<float *>(fftwf_malloc(sizeof(float) * arraysize));
+
+    // Initialize arrays to zero (fftwf_malloc does not initialize memory)
+    memset(u, 0, sizeof(float) * arraysize);
+    memset(v, 0, sizeof(float) * arraysize);
+    memset(f_x, 0, sizeof(float) * arraysize);
+    memset(f_y, 0, sizeof(float) * arraysize);
+
+    // Your code for the simulation logic goes here
+
+
+    // Deallocate the arrays, deinitialize FFTW
+    fftwf_free(u);
+    fftwf_free(v);
+    fftwf_free(f_x);
+    fftwf_free(f_y);
+    deinit_FFT();
 }
