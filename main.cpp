@@ -132,6 +132,9 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
     FFT(1, u0);
     FFT(1, v0);
 
+
+    // here we solve the viscosity term in the frequency domain
+    // we also force the velocity field to conserve mass
     for (i = 0; i <= n; i += 2)
     {
         x = 0.5 * i;
@@ -163,6 +166,7 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
     FFT(-1, u0);
     FFT(-1, v0);
 
+    // here we normalize the arrays u and v
     f = 1.0 / (n * n);
     for (i = 0; i < n; i++)
         for (j = 0; j < n; j++)
