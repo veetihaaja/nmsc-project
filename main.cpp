@@ -6,7 +6,7 @@
 
 static fftwf_plan plan_rc, plan_cr;
 
-#define DEBUG 1
+#define DEBUG 0
 
 /*
 Final project of NMSC 2025, by Veeti Haaja, based on the simple stable FFT fluid solver by Stam.
@@ -289,46 +289,76 @@ void initial_D_field(float *D, const int n) {
     }
 }
 
-void write_to_file(const char *filename, const float *v_x, const float *v_y, const float *D, const int n, const float time) {
+void write_to_file(const float *v_x, const float *v_y, const float *D, const int n, const float time) {
 
-    std::ofstream file;
-    file.open(filename);
+    // writing timestep
+    std::ofstream timestepfile;
+    timestepfile.open("output/timestep", std::ios::app);
 
-    if (!file) {
-        std::cerr << "Error opening file: " << filename << std::endl;
-        abort();
-    }
+    timestepfile << time << "\n";
 
-    //writing timestep
-    file << time << "\n";
+    timestepfile.close();
 
     //writing vx
+    std::ofstream vxfile;
+    vxfile.open("output/vx", std::ios::app);
+
     for (int i = 0; i<n; i++) {
         for (int j = 0; j<n; j++) {
-            file << v_x[i + n * j] << "\t";
+            vxfile << v_x[i + n * j] << " ";
         }
     }
 
-    file << "\n";
+    vxfile << "\n";
+    vxfile.close();
 
     //writing vy
-    for (int i = 0; i<n; i++) {
-        for (int j = 0; j<n; j++) {
-            file << v_y[i + n * j] << "\t";
-        }
-    }
 
-    file << "\n";
+    std::ofstream vyfile;
+    vyfile.open("output/vy", std::ios::app);
 
     for (int i = 0; i<n; i++) {
         for (int j = 0; j<n; j++) {
-            file << D[i + n * j] << "\t";
+            vyfile << v_y[i + n * j] << " ";
         }
     }
-    
-    file << "\n";
-    file.close();
 
+    vyfile << "\n";
+    vyfile.close();
+
+    //writing D
+
+
+    std::ofstream Dfile;
+    Dfile.open("output/D", std::ios::app);
+
+    for (int i = 0; i<n; i++) {
+        for (int j = 0; j<n; j++) {
+            Dfile << D[i + n * j] << " ";
+        }
+    }
+
+    Dfile << "\n";
+    Dfile.close();
+
+}
+
+void clearOutputFiles() {
+    std::ofstream timestepfile;
+    timestepfile.open("output/timestep", std::ios::trunc);
+    timestepfile.close();
+
+    std::ofstream vxfile;
+    vxfile.open("output/vx", std::ios::trunc);
+    vxfile.close();
+
+    std::ofstream vyfile;
+    vyfile.open("output/vy", std::ios::trunc);
+    vyfile.close();
+
+    std::ofstream Dfile;
+    Dfile.open("output/D", std::ios::trunc);
+    Dfile.close();
 }
 
 int main() {
@@ -373,9 +403,11 @@ int main() {
     const int simulation_steps = 500;
 
     const int write_interval = 10; // write every 10 steps
-    const char *filename = "output.txt";
 
-    std::cout << "starting simulation" << std::endl;
+    std::cout << "writing initial state and starting simulation" << std::endl;
+    // write initial state to file
+    clearOutputFiles();
+    write_to_file(u, v, D, N, time);
     // main simulation loop
     while (time < time_end && timestep < simulation_steps) {
 
@@ -399,13 +431,14 @@ int main() {
 
         // write to file every write_interval steps
         if (timestep % write_interval == 0) {
-            write_to_file(filename, u, v, D, N, time);
+            write_to_file(u, v, D, N, time);
         }
 
         if (DEBUG) std::cout << "file written" << std::endl;
 
         time += delta_t;
         timestep++;
+        std::cout << "timestep: " << timestep << ", time: " << time << std::endl;
 
     }
 
