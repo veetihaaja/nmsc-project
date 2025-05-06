@@ -120,6 +120,9 @@ int main() {
   const int N = 500; // Setting up 500x500 grid for an example
   const int arraysize = N * (N + 2); // fftw uses two extra rows
 
+    // Initialize FFTW
+    init_FFT(N);
+
   // Allocate arrays using fftwf_malloc
   float *u = static_cast<float *>(fftwf_malloc(sizeof(float) * arraysize));
   float *v = static_cast<float *>(fftwf_malloc(sizeof(float) * arraysize));

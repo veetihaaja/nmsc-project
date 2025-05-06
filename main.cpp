@@ -344,6 +344,9 @@ int main() {
     const float sigma = 0.02;
     const float k = 4.0; 
 
+    // Initialize FFTW
+    init_FFT(N);
+
     // Allocate arrays using fftwf_malloc
     float *u = static_cast<float *>(fftwf_malloc(sizeof(float) * arraysize));
     float *v = static_cast<float *>(fftwf_malloc(sizeof(float) * arraysize));
