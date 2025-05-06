@@ -94,10 +94,7 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
         v0[i] = v[i];
     }
 
-    if (DEBUG)
-    {
-        std::cout << "step 1, outside force done" << std::endl;
-    }
+    if (DEBUG) std::cout << "step 1, outside force done" << std::endl;
 
     // step 2
     // advecting the velocity fields    
@@ -134,36 +131,25 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
         }
     }
 
-    if (DEBUG)
-    {
-        std::cout << "step 2, advection done" << std::endl;
-    }
+    if (DEBUG) std::cout << "step 2, advection done" << std::endl;
 
     for (i = 0; i < n; i++)
         for (j = 0; j < n; j++)
         {
             u0[i + (n + 2) * j] = u[i + n * j];
             v0[i + (n + 2) * j] = v[i + n * j];
+            D[i + (n + 2) * j] = D[i + n * j];
         }
     
-    if (DEBUG)
-    {
-        std::cout << "step 3 done" << std::endl;
-    }
+    if (DEBUG) std::cout << "step 3, setting boundaries, done" << std::endl;
 
-    if (DEBUG)
-    {
-        std::cout << "transforming into frequenct domain" << std::endl;
-    }
+    if (DEBUG) std::cout << "transforming into frequency domain" << std::endl;
 
     // transforming the arrays u0 and v0 to the frequency domain
     FFT(1, u0);
     FFT(1, v0);
 
-    if (DEBUG)
-    {
-        std::cout << "transformation done" << std::endl;
-    }
+    if (DEBUG) std::cout << "transformation done" << std::endl;
 
 
     // here we solve the viscosity term in the frequency domain
@@ -195,19 +181,13 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
         }
     }
 
-    if (DEBUG)
-    {
-        std::cout << "step 4, viscosity and mass conservation done, transforming back into spatial domain" << std::endl;
-    }
+    if (DEBUG) std::cout << "step 4, viscosity and mass conservation done, transforming back into spatial domain" << std::endl;
 
     // transforming the arrays u0 and v0 back to the spatial domain
     FFT(-1, u0);
     FFT(-1, v0);
 
-    if (DEBUG)
-    {
-        std::cout << "transform back done" << std::endl;
-    }
+    if (DEBUG) std::cout << "transform back done" << std::endl;
 
     // here we normalize the arrays u and v
     f = 1.0 / (n * n);
@@ -218,14 +198,11 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
             v[i + n * j] = f * v0[i + (n + 2) * j];
         }
 
-    if (DEBUG) {
-        std::cout << "step 5, normalizing arrays done" << std::endl;
-    }
+    if (DEBUG) std::cout << "step 5, normalizing arrays done" << std::endl;
     
     // to change this to solve the dye field advection, we need to make a new D0 array for the interpolation
 
-    float D0[n];
-    float d0;
+    float D0[n * (n + 2)];
 
     for (i = 0; i < n; i++) {
         for (j = 0; j < n; j++) {
@@ -258,8 +235,8 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
             j0 = (n + (j0 % n)) % n;
             j1 = (j0 + 1) % n;
 
-            D[i + n * j] = (1 - s) * ((1 - t) * D[i0 + n * j0] + t * D[i0 + n * j1]) +
-                           s * ((1 - t) * D[i1 + n * j0] + t * D[i1 + n * j1]);
+            D[i + n * j] = (1 - s) * ((1 - t) * D0[i0 + n * j0] + t * D0[i0 + n * j1]) +
+                           s * ((1 - t) * D0[i1 + n * j0] + t * D0[i1 + n * j1]);
         }
     }
 
@@ -268,8 +245,6 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
         std::cout << "step 6, dye advection done" << std::endl;
         std::cout << "solver done" << std::endl;
     }
-
-
 
 }
 
@@ -369,7 +344,6 @@ int main() {
     const float sigma = 0.02;
     const float k = 4.0; 
 
-
     // Allocate arrays using fftwf_malloc
     float *u = static_cast<float *>(fftwf_malloc(sizeof(float) * arraysize));
     float *v = static_cast<float *>(fftwf_malloc(sizeof(float) * arraysize));
@@ -402,9 +376,8 @@ int main() {
     // main simulation loop
     while (time < time_end && timestep < simulation_steps) {
 
-        if (DEBUG) {
-            std::cout << "timestep: " << timestep << ", time: " << time << std::endl;
-        }
+        if (DEBUG) std::cout << "timestep: " << timestep << ", time: " << time << std::endl;
+
         // apply force fields
         if (timestep < 10) {
             initial_fx_field(f_x, N, U_0, delta);
@@ -413,25 +386,20 @@ int main() {
             memset(f_x, 0, sizeof(float) * arraysize);
             memset(f_y, 0, sizeof(float) * arraysize);
         }
-        if (DEBUG) {
-            std::cout << "force fields applied" << std::endl;
-        }   
+
+        if (DEBUG) std::cout << "force fields applied" << std::endl; 
 
         // apply solver
         stable_solve(N, u, v, f_x, f_y, D, visc, delta_t);
 
-        if (DEBUG) {
-            std::cout << "solver applied" << std::endl;
-        }
+        if (DEBUG) std::cout << "solver applied" << std::endl;
 
         // write to file every write_interval steps
         if (timestep % write_interval == 0) {
             write_to_file(filename, u, v, D, N, time);
         }
 
-        if (DEBUG) {
-            std::cout << "file written" << std::endl;
-        }
+        if (DEBUG) std::cout << "file written" << std::endl;
 
         time += delta_t;
         timestep++;
