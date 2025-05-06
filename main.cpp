@@ -96,7 +96,7 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
 
     if (DEBUG)
     {
-        std::cout << "step 1 done" << std::endl;
+        std::cout << "step 1, outside force done" << std::endl;
     }
 
     // step 2
@@ -136,40 +136,7 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
 
     if (DEBUG)
     {
-        std::cout << "step 2 done" << std::endl;
-    }
-
-    // x and y are the centers of cells' positions
-    // i and j are the indices of the cells
-    for (x = 0.5 / n, i = 0; i < n; i++, x += 1.0 / n)
-    {
-        for (y = 0.5 / n, j = 0; j < n; j++, y += 1.0 / n)
-        {
-
-            x0 = n * (x - dt * u0[i + n * j]) - 0.5;
-            y0 = n * (y - dt * v0[i + n * j]) - 0.5;
-
-            i0 = floor(x0);
-            s = x0 - i0;
-            i0 = (n + (i0 % n)) % n;
-            i1 = (i0 + 1) % n;
-
-            j0 = floor(y0);
-            t = y0 - j0;
-            j0 = (n + (j0 % n)) % n;
-            j1 = (j0 + 1) % n;
-
-            u[i + n * j] = (1 - s) * ((1 - t) * u0[i0 + n * j0] + t * u0[i0 + n * j1]) +
-                           s * ((1 - t) * u0[i1 + n * j0] + t * u0[i1 + n * j1]);
-
-            v[i + n * j] = (1 - s) * ((1 - t) * v0[i0 + n * j0] + t * v0[i0 + n * j1]) +
-                           s * ((1 - t) * v0[i1 + n * j0] + t * v0[i1 + n * j1]);
-        }
-    }
-
-    if (DEBUG)
-    {
-        std::cout << "step 3 done" << std::endl;
+        std::cout << "step 2, advection done" << std::endl;
     }
 
     for (i = 0; i < n; i++)
@@ -179,6 +146,10 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
             v0[i + (n + 2) * j] = v[i + n * j];
         }
     
+    if (DEBUG)
+    {
+        std::cout << "step 3 done" << std::endl;
+    }
 
     if (DEBUG)
     {
@@ -226,7 +197,7 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
 
     if (DEBUG)
     {
-        std::cout << "step 4 done, transforming back into spatial domain" << std::endl;
+        std::cout << "step 4, viscosity and mass conservation done, transforming back into spatial domain" << std::endl;
     }
 
     // transforming the arrays u0 and v0 back to the spatial domain
@@ -248,14 +219,10 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
         }
 
     if (DEBUG) {
-        std::cout << "step 5 done" << std::endl;
+        std::cout << "step 5, normalizing arrays done" << std::endl;
     }
     
-    // TODO solve dye field advection
     // to change this to solve the dye field advection, we need to make a new D0 array for the interpolation
-
-    // dD/dt + (u * nabla) D = 0
-    // dD/dt = -v_x * nabla D - v_y * nabla D
 
     float D0[n];
     float d0;
@@ -271,30 +238,34 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
         for (y = 0.5 / n, j = 0; j < n; j++, y += 1.0 / n)
         {
 
-            // x0 = n * (x - dt * u0[i + n * j]) - 0.5;
-            // y0 = n * (y - dt * v0[i + n * j]) - 0.5;
+            // this is interpolation, where x0 and y0 are the cell center positions times n, when interpolated backwards a timestep. 
+            x0 = n * (x - dt * u0[i + n * j]) - 0.5;
+            y0 = n * (y - dt * v0[i + n * j]) - 0.5;
 
-            // i0 = floor(x0);
-            // s = x0 - i0;
-            // i0 = (n + (i0 % n)) % n;
-            // i1 = (i0 + 1) % n;
+            // her we calculate i0, i1 and s, which are
+            // i0 is the index of the cell at x0
+            i0 = floor(x0);
+            // s is the distance from the cell center to the position x0
+            s = x0 - i0;
+            // this accounts for the periodic boundary conditions
+            i0 = (n + (i0 % n)) % n;
+            // i1 is the index of the next cell in the x direction
+            i1 = (i0 + 1) % n;
 
-            // j0 = floor(y0);
-            // t = y0 - j0;
-            // j0 = (n + (j0 % n)) % n;
-            // j1 = (j0 + 1) % n;
+            // same things here but for the y direction
+            j0 = floor(y0);
+            t = y0 - j0;
+            j0 = (n + (j0 % n)) % n;
+            j1 = (j0 + 1) % n;
 
-            // u[i + n * j] = (1 - s) * ((1 - t) * u0[i0 + n * j0] + t * u0[i0 + n * j1]) +
-            //                s * ((1 - t) * u0[i1 + n * j0] + t * u0[i1 + n * j1]);
-
-            // v[i + n * j] = (1 - s) * ((1 - t) * v0[i0 + n * j0] + t * v0[i0 + n * j1]) +
-            //                s * ((1 - t) * v0[i1 + n * j0] + t * v0[i1 + n * j1]);
+            D[i + n * j] = (1 - s) * ((1 - t) * D[i0 + n * j0] + t * D[i0 + n * j1]) +
+                           s * ((1 - t) * D[i1 + n * j0] + t * D[i1 + n * j1]);
         }
     }
 
     if (DEBUG)
     {
-        std::cout << "step 6 done" << std::endl;
+        std::cout << "step 6, dye advection done" << std::endl;
         std::cout << "solver done" << std::endl;
     }
 
