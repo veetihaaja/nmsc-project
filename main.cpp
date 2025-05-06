@@ -168,7 +168,7 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
             if (r == 0.0)
                 continue;
 
-            f = exp(-r * dt * visc);
+            f = expf(-r * dt * visc);
             U[0] = u0[i + (n + 2) * j];
             V[0] = v0[i + (n + 2) * j];
             U[1] = u0[i + 1 + (n + 2) * j];
@@ -366,7 +366,7 @@ int main() {
     const int N = 500; // Setting up 500x500 grid for an example
     const int arraysize = N * (N + 2); // fftw uses two extra rows
 
-    const float delta_t = 0.01; // time step
+    const float delta_t = 0.001; // time step
     const float visc = 0.001; // viscosity
     const float U_0 = 5.0; 
     const float delta = 0.025; 
