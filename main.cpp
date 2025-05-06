@@ -202,7 +202,7 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
     
     // to change this to solve the dye field advection, we need to make a new D0 array for the interpolation
 
-    float D0[n * (n + 2)];
+    float D0[n * n];
 
     for (i = 0; i < n; i++) {
         for (j = 0; j < n; j++) {
@@ -400,9 +400,9 @@ int main() {
     const float time_end = 1000.0;
 
     int timestep = 0;
-    const int simulation_steps = 500;
+    const int simulation_steps = 30;
 
-    const int write_interval = 10; // write every 10 steps
+    const int write_interval = 1; // write every n steps
 
     std::cout << "writing initial state and starting simulation" << std::endl;
     // write initial state to file
