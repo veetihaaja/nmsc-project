@@ -5,4 +5,4 @@ https://www.dgp.toronto.edu/public_user/stam/reality/Research/pdf/jgt01.pdf
 
 A sample:
 
-![](./out.gif/out.gif)
+![](out.gif)
