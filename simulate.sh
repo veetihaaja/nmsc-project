@@ -2,6 +2,7 @@
 
 # this bash script runs the simulation, and then creates a video of the D field
 
+make
 rm *.mp4
 
 cd output/D_plots

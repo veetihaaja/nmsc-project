@@ -74,7 +74,7 @@ dt: time step for the simulation
 */
 
 void stable_solve(int n, float *u, float *v, float *u0, float *v0,
-                  float *D, float visc, float dt)
+                  float *D, float *D0, float visc, float dt)
 
 {
 
@@ -92,6 +92,7 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
         u0[i] = u[i];
         v[i] += dt * v0[i];
         v0[i] = v[i];
+        D0[i] = D[i];
     }
 
     if (DEBUG) std::cout << "step 1, outside force done" << std::endl;
@@ -128,6 +129,9 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
 
             v[i + n * j] = (1 - s) * ((1 - t) * v0[i0 + n * j0] + t * v0[i0 + n * j1]) +
                            s * ((1 - t) * v0[i1 + n * j0] + t * v0[i1 + n * j1]);
+
+            D[i + n * j] = (1 - s) * ((1 - t) * D0[i0 + n * j0] + t * D0[i0 + n * j1]) +
+                            s * ((1 - t) * D0[i1 + n * j0] + t * D0[i1 + n * j1]); 
         }
     }
 
@@ -138,7 +142,7 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
         {
             u0[i + (n + 2) * j] = u[i + n * j];
             v0[i + (n + 2) * j] = v[i + n * j];
-            D[i + (n + 2) * j] = D[i + n * j];
+            D0[i + (n + 2) * j] = D[i + n * j];
         }
     
     if (DEBUG) std::cout << "step 3, setting boundaries, done" << std::endl;
@@ -202,47 +206,8 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
     
     // to change this to solve the dye field advection, we need to make a new D0 array for the interpolation
 
-    float D0[n * n];
-
-    for (i = 0; i < n; i++) {
-        for (j = 0; j < n; j++) {
-            D0[i + n * j] = D[i + n * j];
-        }
-    }
-
-    for (x = 0.5 / n, i = 0; i < n; i++, x += 1.0 / n)
-    {
-        for (y = 0.5 / n, j = 0; j < n; j++, y += 1.0 / n)
-        {
-
-            // this is interpolation, where x0 and y0 are the cell center positions times n, when interpolated backwards a timestep. 
-            x0 = n * (x - dt * u0[i + n * j]) - 0.5;
-            y0 = n * (y - dt * v0[i + n * j]) - 0.5;
-
-            // her we calculate i0, i1 and s, which are
-            // i0 is the index of the cell at x0
-            i0 = floor(x0);
-            // s is the distance from the cell center to the position x0
-            s = x0 - i0;
-            // this accounts for the periodic boundary conditions
-            i0 = (n + (i0 % n)) % n;
-            // i1 is the index of the next cell in the x direction
-            i1 = (i0 + 1) % n;
-
-            // same things here but for the y direction
-            j0 = floor(y0);
-            t = y0 - j0;
-            j0 = (n + (j0 % n)) % n;
-            j1 = (j0 + 1) % n;
-
-            D[i + n * j] = (1 - s) * ((1 - t) * D0[i0 + n * j0] + t * D0[i0 + n * j1]) +
-                           s * ((1 - t) * D0[i1 + n * j0] + t * D0[i1 + n * j1]);
-        }
-    }
-
     if (DEBUG)
     {
-        std::cout << "step 6, dye advection done" << std::endl;
         std::cout << "solver done" << std::endl;
     }
 
@@ -366,10 +331,12 @@ int main() {
     const int N = 500; // Setting up 500x500 grid for an example
     const int arraysize = N * (N + 2); // fftw uses two extra rows
 
-    const float delta_t = 0.001; // time step
+    const float delta_t = 0.01; // time step
     const float visc = 0.001; // viscosity
+
     const float U_0 = 5.0; 
     const float delta = 0.025; 
+
     const float A = 1.0; 
     const float sigma = 0.02;
     const float k = 4.0; 
@@ -385,6 +352,7 @@ int main() {
     float *f_y = static_cast<float *>(fftwf_malloc(sizeof(float) * arraysize));
 
     float *D = static_cast<float *>(fftwf_malloc(sizeof(float) * arraysize));
+    float *D0 = static_cast<float *>(fftwf_malloc(sizeof(float) * arraysize));
 
     // Initialize arrays to zero (fftwf_malloc does not initialize memory)
     memset(u, 0, sizeof(float) * arraysize);
@@ -400,9 +368,9 @@ int main() {
     const float time_end = 1000.0;
 
     int timestep = 0;
-    const int simulation_steps = 30;
+    const int simulation_steps = 500;
 
-    const int write_interval = 1; // write every n steps
+    const int write_interval = 10; // write every n steps
 
     std::cout << "writing initial state and starting simulation" << std::endl;
     // write initial state to file
@@ -418,14 +386,14 @@ int main() {
             initial_fx_field(f_x, N, U_0, delta);
             initial_fy_field(f_y, N, A, k, sigma);
         } else {
-            memset(f_x, 0, sizeof(float) * arraysize);
-            memset(f_y, 0, sizeof(float) * arraysize);
+            memset(f_x, 0.0, sizeof(float) * arraysize);
+            memset(f_y, 0.0, sizeof(float) * arraysize);
         }
 
         if (DEBUG) std::cout << "force fields applied" << std::endl; 
 
         // apply solver
-        stable_solve(N, u, v, f_x, f_y, D, visc, delta_t);
+        stable_solve(N, u, v, f_x, f_y, D, D0, visc, delta_t);
 
         if (DEBUG) std::cout << "solver applied" << std::endl;
 
