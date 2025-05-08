@@ -139,6 +139,7 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
             j0 = (n + (j0 % n)) % n;
             j1 = (j0 + 1) % n;
 
+            // advection interpolation is done here
             u[i + n * j] = (1 - s) * ((1 - t) * u0[i0 + n * j0] + t * u0[i0 + n * j1]) +
                            s * ((1 - t) * u0[i1 + n * j0] + t * u0[i1 + n * j1]);
 
@@ -221,16 +222,15 @@ void stable_solve(int n, float *u, float *v, float *u0, float *v0,
     
     // to change this to solve the dye field advection, we need to make a new D0 array for the interpolation
 
-    if (DEBUG)
-    {
-        std::cout << "solver done" << std::endl;
-    }
+    if (DEBUG) std::cout << "solver done" << std::endl;
 
 }
 
-void initial_fx_field(float *f_x, const int n, const float U_0, const float delta) {
+void initial_fx_field(float *f_x, const int n) {
 
     float y_j;
+    const float U_0 = 5.0; 
+    const float delta = 0.025; 
 
     if (FORCE_TEST_TYPE == 1) {
 
@@ -256,9 +256,12 @@ void initial_fx_field(float *f_x, const int n, const float U_0, const float delt
 
 }
 
-void initial_fy_field(float *f_y, const int n, const float A, const float k, const float sigma) {
+void initial_fy_field(float *f_y, const int n) {
 
     float x_i, y_j;
+    const float A = 1.0; 
+    const float sigma = 0.02;
+    const float k = 4.0; 
 
     if (FORCE_TEST_TYPE == 1) {
         for (int i = 0; i < n; i++) {
@@ -268,6 +271,7 @@ void initial_fy_field(float *f_y, const int n, const float A, const float k, con
                 f_y[i + n * j] = A * sinf(2 * M_PI * k * x_i) * expf(-(y_j - 0.5)*(y_j - 0.5)/(2 * sigma * sigma));
             }
         }
+
     } else if (FORCE_TEST_TYPE == 2) {
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
@@ -401,13 +405,6 @@ int main() {
     const float delta_t = 0.01; // time step
     const float visc = 0.001; // viscosity
 
-    const float U_0 = 5.0; 
-    const float delta = 0.025; 
-
-    const float A = 1.0; 
-    const float sigma = 0.02;
-    const float k = 4.0; 
-
     // Initialize FFTW
     init_FFT(N);
 
@@ -435,7 +432,7 @@ int main() {
     const float time_end = 1000.0;
 
     int timestep = 0;
-    const int simulation_steps = 2000;
+    const int simulation_steps = 500;
 
     const int write_interval = 10; // write every n steps
 
@@ -450,8 +447,8 @@ int main() {
 
         // apply force fields
         if (timestep < 10) {
-            initial_fx_field(f_x, N, U_0, delta);
-            initial_fy_field(f_y, N, A, k, sigma);
+            initial_fx_field(f_x, N);
+            initial_fy_field(f_y, N);
         } else {
             memset(f_x, 0, sizeof(float) * arraysize);
             memset(f_y, 0, sizeof(float) * arraysize);
@@ -477,6 +474,7 @@ int main() {
 
     }
 
+    std::cout << "simulation done" << std::endl;
 
     // Deallocate the arrays, deinitialize FFTW
     fftwf_free(u);
