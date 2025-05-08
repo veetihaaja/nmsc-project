@@ -1,4 +1,4 @@
 main
 output/*
 !output/README.MD
-project.*
+project_report
