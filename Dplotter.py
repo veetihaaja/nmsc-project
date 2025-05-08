@@ -6,6 +6,12 @@ D = np.loadtxt('output/D', dtype=float)
 timesteps = np.loadtxt('output/timestep', dtype=float)
 
 N = 500
+if timesteps[11]-timesteps[10] < 0.09:
+    fps = 24
+    times = 1
+else:
+    fps = 2
+    times = 10
 
 fig, ax = plt.subplots(figsize=(7, 7), dpi=100)
 
@@ -15,7 +21,7 @@ def animateD(i):
     Dgrid = D[i].reshape((N, N)).T
 
     dplot.set_array(Dgrid)
-    ax.set_title(f'time {timesteps[i]}, timestep {i}')
+    ax.set_title(f'time {timesteps[i]}, timestep {i*times}')
     return dplot,
 
 if timesteps[11]-timesteps[10] < 0.09:

@@ -7,6 +7,13 @@ vx = np.loadtxt('output/vx', dtype=float)
 vy = np.loadtxt('output/vy', dtype=float)
 
 N = 500
+if timesteps[11]-timesteps[10] < 0.09:
+    fps = 24
+    times = 1
+else:
+    fps = 2
+    times = 10
+
 arrow_spacing = 50  # Draw arrows every 10 points
 
 fig, ax = plt.subplots(figsize=(7, 7), dpi=100)
@@ -22,7 +29,7 @@ def animateD(i, Q, X, Y):
     vygrid = vy[i].reshape((N, N))[::arrow_spacing, ::arrow_spacing].T
     
     Q.set_UVC(vxgrid, vygrid)
-    ax.set_title(f'time {timesteps[i]}, timestep {i}')
+    ax.set_title(f'time {timesteps[i]}, timestep {i*times}')
     return Q,
 
 if timesteps[11]-timesteps[10] < 0.09:

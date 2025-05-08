@@ -9,6 +9,21 @@ static fftwf_plan plan_rc, plan_cr;
 #define DEBUG 0
 
 /*
+force test types:
+1: force test as given in the assignment
+2: small gaussian force sideways
+*/
+#define FORCE_TEST_TYPE 1
+
+/*
+start dye test types:
+1: dye test as given in the assignment
+2. a set of lines of dye
+*/
+#define DYE_TEST_TYPE 1
+
+
+/*
 Final project of NMSC 2025, by Veeti Haaja, based on the simple stable FFT fluid solver by Stam.
 */
 
@@ -217,24 +232,58 @@ void initial_fx_field(float *f_x, const int n, const float U_0, const float delt
 
     float y_j;
 
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            y_j = (float)j / n;
-            f_x[i + n * j] = U_0 * tanhf((y_j - 0.5)/(delta));
+    if (FORCE_TEST_TYPE == 1) {
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                y_j = (float)j / n;
+                f_x[i + n * j] = U_0 * tanhf((y_j - 0.5)/(delta));
+            }
         }
-    }   
+    } else if (FORCE_TEST_TYPE == 2) {
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                //y_j = (float)j / n;
+                f_x[i + n * j] = 0.0;
+            }
+        }
+    } else {
+        std::cerr << "Invalid force test type" << std::endl;
+        abort();
+    }
+
+
 }
 
 void initial_fy_field(float *f_y, const int n, const float A, const float k, const float sigma) {
 
     float x_i, y_j;
 
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            y_j = (float)j / n;
-            x_i = (float)i / n;
-            f_y[i + n * j] = A * sinf(2 * M_PI * k * x_i) * expf(-(y_j - 0.5)*(y_j - 0.5)/(2 * sigma * sigma));
+    if (FORCE_TEST_TYPE == 1) {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                y_j = (float)j / n;
+                x_i = (float)i / n;
+                f_y[i + n * j] = A * sinf(2 * M_PI * k * x_i) * expf(-(y_j - 0.5)*(y_j - 0.5)/(2 * sigma * sigma));
+            }
         }
+    } else if (FORCE_TEST_TYPE == 2) {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                y_j = (float)j / n;
+                x_i = (float)i / n;
+
+                if (y_j < 0.2 * expf(-(x_i - 0.5)*(x_i - 0.5)/(2 * 0.03*0.03))) {
+                    f_y[i + n * j] = 10.0;
+                } else {
+                    f_y[i + n * j] = 0.0;
+                }
+            }
+        }        
+    } else {
+        std::cerr << "Invalid force test type" << std::endl;
+        abort();
     }
 }
 
@@ -242,16 +291,34 @@ void initial_D_field(float *D, const int n) {
 
     float y_j;
 
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            y_j = (float)j / n;
-            if (y_j < 0.5) {
-                D[i + n * j] = 0.0;
-            } else {
-                D[i + n * j] = 1.0;
+
+    if (DYE_TEST_TYPE == 1) {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                y_j = (float)j / n;
+                if (y_j < 0.5) {
+                    D[i + n * j] = 0.0;
+                } else {
+                    D[i + n * j] = 1.0;
+                }
             }
         }
-    }
+    } else if (DYE_TEST_TYPE == 2) {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                y_j = (float)j / n;
+                float ymod = fmod(y_j, 0.2);
+                if (ymod < 0.1) {
+                    D[i + n * j] = 1.0;
+                } else {
+                    D[i + n * j] = 0.0;
+                }
+            }
+        }
+    } else {
+        std::cerr << "Invalid dye test type" << std::endl;
+        abort();
+    }   
 }
 
 void write_to_file(const float *v_x, const float *v_y, const float *D, const int n, const float time) {
@@ -368,7 +435,7 @@ int main() {
     const float time_end = 1000.0;
 
     int timestep = 0;
-    const int simulation_steps = 500;
+    const int simulation_steps = 2000;
 
     const int write_interval = 10; // write every n steps
 
@@ -386,8 +453,8 @@ int main() {
             initial_fx_field(f_x, N, U_0, delta);
             initial_fy_field(f_y, N, A, k, sigma);
         } else {
-            memset(f_x, 0.0, sizeof(float) * arraysize);
-            memset(f_y, 0.0, sizeof(float) * arraysize);
+            memset(f_x, 0, sizeof(float) * arraysize);
+            memset(f_y, 0, sizeof(float) * arraysize);
         }
 
         if (DEBUG) std::cout << "force fields applied" << std::endl; 
