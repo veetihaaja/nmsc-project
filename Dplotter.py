@@ -6,7 +6,7 @@ D = np.loadtxt('output/D', dtype=float)
 timesteps = np.loadtxt('output/timestep', dtype=float)
 
 N = 500
-if timesteps[11]-timesteps[10] < 0.09:
+if timesteps[4]-timesteps[3] < 0.09:
     fps = 24
     times = 1
 else:

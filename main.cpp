@@ -13,14 +13,14 @@ force test types:
 1: force test as given in the assignment
 2: small gaussian force sideways
 */
-#define FORCE_TEST_TYPE 1
+#define FORCE_TEST_TYPE 2
 
 /*
 start dye test types:
 1: dye test as given in the assignment
 2. a set of lines of dye
 */
-#define DYE_TEST_TYPE 1
+#define DYE_TEST_TYPE 2
 
 
 /*
@@ -400,10 +400,15 @@ void clearOutputFiles() {
 int main() {
 
     const int N = 500; // Setting up 500x500 grid for an example
-    const int arraysize = N * (N + 2); // fftw uses two extra rows
-
     const float delta_t = 0.01; // time step
     const float visc = 0.001; // viscosity
+    const float time_end = 1000.0; // end time of simulation
+    const int simulation_steps = 500; // number of simulation steps
+    const int write_interval = 10; // write every n steps
+
+    int timestep = 0;
+    float time = 0.0;
+    const int arraysize = N * (N + 2); // fftw uses two extra rows
 
     // Initialize FFTW
     init_FFT(N);
@@ -427,14 +432,6 @@ int main() {
     // Initialize dye field
 
     initial_D_field(D, N);
-
-    float time = 0.0;
-    const float time_end = 1000.0;
-
-    int timestep = 0;
-    const int simulation_steps = 500;
-
-    const int write_interval = 10; // write every n steps
 
     std::cout << "writing initial state and starting simulation" << std::endl;
     // write initial state to file

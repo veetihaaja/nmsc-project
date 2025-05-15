@@ -7,7 +7,7 @@ vx = np.loadtxt('output/vx', dtype=float)
 vy = np.loadtxt('output/vy', dtype=float)
 
 N = 500
-if timesteps[11]-timesteps[10] < 0.09:
+if timesteps[4]-timesteps[3] < 0.09:
     fps = 24
     times = 1
 else:
@@ -31,11 +31,6 @@ def animateD(i, Q, X, Y):
     Q.set_UVC(vxgrid, vygrid)
     ax.set_title(f'time {timesteps[i]}, timestep {i*times}')
     return Q,
-
-if timesteps[11]-timesteps[10] < 0.09:
-    fps = 24
-else:
-    fps = 2
 
 anim = FuncAnimation(fig, animateD, fargs=(Q, X, Y), frames=len(timesteps), interval=100, blit=False)
 anim.save('V_animation.mp4', writer='ffmpeg', fps=fps)
