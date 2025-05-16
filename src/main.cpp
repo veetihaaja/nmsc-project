@@ -325,11 +325,21 @@ void initial_D_field(float *D, const int n) {
     }   
 }
 
+void print_vspace_sum(const float *v_x, const float *v_y, const int n) {
+    float sum = 0.0;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            sum += abs(v_x[i + n * j]) + abs(v_y[i + n * j]);
+        }
+    }
+    std::cout << "sum of velocity space: " << sum << std::endl;
+}
+
 void write_to_file(const float *v_x, const float *v_y, const float *D, const int n, const float time) {
 
     // writing timestep
     std::ofstream timestepfile;
-    timestepfile.open("output/timestep", std::ios::app);
+    timestepfile.open("../run/output/timestep", std::ios::app);
 
     timestepfile << time << "\n";
 
@@ -337,7 +347,7 @@ void write_to_file(const float *v_x, const float *v_y, const float *D, const int
 
     //writing vx
     std::ofstream vxfile;
-    vxfile.open("output/vx", std::ios::app);
+    vxfile.open("../run/output/vx", std::ios::app);
 
     for (int i = 0; i<n; i++) {
         for (int j = 0; j<n; j++) {
@@ -351,7 +361,7 @@ void write_to_file(const float *v_x, const float *v_y, const float *D, const int
     //writing vy
 
     std::ofstream vyfile;
-    vyfile.open("output/vy", std::ios::app);
+    vyfile.open("../run/output/vy", std::ios::app);
 
     for (int i = 0; i<n; i++) {
         for (int j = 0; j<n; j++) {
@@ -366,7 +376,7 @@ void write_to_file(const float *v_x, const float *v_y, const float *D, const int
 
 
     std::ofstream Dfile;
-    Dfile.open("output/D", std::ios::app);
+    Dfile.open("../run/output/D", std::ios::app);
 
     for (int i = 0; i<n; i++) {
         for (int j = 0; j<n; j++) {
@@ -381,19 +391,19 @@ void write_to_file(const float *v_x, const float *v_y, const float *D, const int
 
 void clearOutputFiles() {
     std::ofstream timestepfile;
-    timestepfile.open("output/timestep", std::ios::trunc);
+    timestepfile.open("../run/output/timestep", std::ios::trunc);
     timestepfile.close();
 
     std::ofstream vxfile;
-    vxfile.open("output/vx", std::ios::trunc);
+    vxfile.open("../run/output/vx", std::ios::trunc);
     vxfile.close();
 
     std::ofstream vyfile;
-    vyfile.open("output/vy", std::ios::trunc);
+    vyfile.open("../run/output/vy", std::ios::trunc);
     vyfile.close();
 
     std::ofstream Dfile;
-    Dfile.open("output/D", std::ios::trunc);
+    Dfile.open("../run/output/D", std::ios::trunc);
     Dfile.close();
 }
 
@@ -463,12 +473,17 @@ int main() {
             write_to_file(u, v, D, N, time);
         }
 
+        // if (timestep % write_interval == 0) {
+        //     print_vspace_sum(u, v, N);
+        // }
+
         if (DEBUG) std::cout << "file written" << std::endl;
 
         time += delta_t;
         timestep++;
-        std::cout << "timestep: " << timestep << ", time: " << time << std::endl;
-
+        if (timestep % write_interval == 0) {
+            std::cout << "timestep: " << timestep << ", time: " << time << std::endl;
+        }
     }
 
     std::cout << "simulation done" << std::endl;

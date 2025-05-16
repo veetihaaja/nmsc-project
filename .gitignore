@@ -1,6 +1,8 @@
-main
-output/*
-!output/README.MD
+src/main
+run/output/*
+!run/output/README.MD
 project_report
-D_animation.mp4
-V_animation.mp4
+report.pdf
+run/D_animation.mp4
+run/V_animation.mp4
+src/convergence

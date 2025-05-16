@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-timesteps = np.loadtxt('output/timestep', dtype=float)
-vx = np.loadtxt('output/vx', dtype=float)
-vy = np.loadtxt('output/vy', dtype=float)
+timesteps = np.loadtxt('../run/output/timestep', dtype=float)
+vx = np.loadtxt('../run/output/vx', dtype=float)
+vy = np.loadtxt('../run/output/vy', dtype=float)
 
 N = 500
 if timesteps[4]-timesteps[3] < 0.09:
@@ -33,4 +33,4 @@ def animateD(i, Q, X, Y):
     return Q,
 
 anim = FuncAnimation(fig, animateD, fargs=(Q, X, Y), frames=len(timesteps), interval=100, blit=False)
-anim.save('V_animation.mp4', writer='ffmpeg', fps=fps)
+anim.save('../run/V_animation.mp4', writer='ffmpeg', fps=fps)

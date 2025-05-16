@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-D = np.loadtxt('output/D', dtype=float)
-timesteps = np.loadtxt('output/timestep', dtype=float)
+D = np.loadtxt('../run/output/D', dtype=float)
+timesteps = np.loadtxt('../run/output/timestep', dtype=float)
 
 N = 500
 if timesteps[4]-timesteps[3] < 0.09:
@@ -15,7 +15,7 @@ else:
 
 fig, ax = plt.subplots(figsize=(7, 7), dpi=100)
 
-dplot = plt.imshow(D[0].reshape((N, N)).T, cmap='viridis')
+dplot = plt.imshow(D[0].reshape((N, N)).T, cmap='viridis', origin='lower')
 
 def animateD(i):
     Dgrid = D[i].reshape((N, N)).T
@@ -30,5 +30,5 @@ else:
     fps = 2
 
 anim = FuncAnimation(fig, animateD, frames=len(timesteps), interval=100, blit=True)
-anim.save('D_animation.mp4', writer='ffmpeg', fps=fps)
+anim.save('../run/D_animation.mp4', writer='ffmpeg', fps=fps)
 
